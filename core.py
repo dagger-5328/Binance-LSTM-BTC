@@ -17,17 +17,60 @@ FEATURES = [
 ]
 
 # --- DATA FETCHING ---
-def fetch_data(symbol, limit=2000):
-    url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&limit={limit}"
-    try:
+def fetch_data(symbol, limit=2000, months_back_start=None, months_back_end=None):
+    """
+    Fetch historical OHLCV data from Binance.
+    
+    Args:
+        symbol: Trading pair (e.g., 'BTCUSDT')
+        limit: Number of candles (default 2000, used if no date range specified)
+        months_back_start: How many months back to start (e.g., 12 for 12 months ago)
+        months_back_end: How many months back to end (e.g., 3 for 3 months ago)
+        
+    Example: fetch_data('BTCUSDT', months_back_start=12, months_back_end=3)
+             Fetches data from 12 months ago to 3 months ago
+    """
+    from datetime import datetime, timedelta
+    
+    if months_back_start and months_back_end:
+        # Calculate timestamps
+        now = datetime.utcnow()
+        start_date = now - timedelta(days=months_back_start * 30)
+        end_date = now - timedelta(days=months_back_end * 30)
+        start_ms = int(start_date.timestamp() * 1000)
+        end_ms = int(end_date.timestamp() * 1000)
+        
+        # Fetch with date range
+        url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
+        all_data = []
+        
+        while start_ms < end_ms:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            if not data:
+                break
+            all_data.extend(data)
+            start_ms = int(data[-1][0]) + 3600000  # Move to next hour
+            url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
+        
+        data = all_data
+    else:
+        # Original behavior: fetch latest N candles
+        url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&limit={limit}"
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
+    
+    try:
         df = pd.DataFrame(data, columns=['time','Open','High','Low','Close','Volume', 'ct','q','n','tb','tq','i'])
         df['Close'] = df['Close'].astype(float)
         df['Volume'] = df['Volume'].astype(float)
         df['Open time'] = pd.to_datetime(df['time'], unit='ms')
         return df[['Open time', 'Close', 'Volume']]
+    except Exception as e:
+        print(f"Error fetching {symbol}: {e}")
+        return pd.DataFrame()
     except Exception as e:
         print(f"Error fetching {symbol}: {e}")
         return pd.DataFrame()
@@ -79,18 +122,14 @@ def apply_market_features(df, coin_id, market_returns=None):
     # Trend Indicator
     df['Up_Trend'] = (df['Close'].diff() > 0).rolling(5).mean()
 
-    # 5. Multi-Horizon Targets (FIXED - Balanced)
-
+    # 5. Multi-Horizon Targets (FIXED - Absolute Return Thresholds)
+    # Using fixed thresholds prevents regime shift bias vs. median split
     ret_3d = (df['Close'].shift(-72) - df['Close']) / df['Close']
     ret_7d = (df['Close'].shift(-168) - df['Close']) / df['Close']
 
-    # Remove NaNs temporarily for threshold calculation
-    valid_3d = ret_3d.dropna()
-    valid_7d = ret_7d.dropna()
-
-    # Median split → guarantees ~50/50 balance
-    thresh_3d = valid_3d.median()
-    thresh_7d = valid_7d.median()
+    # Fixed thresholds: 0.5% return = UP (avoids regime dependency)
+    thresh_3d = 0.005
+    thresh_7d = 0.005
 
     df['Target_3d'] = (ret_3d > thresh_3d).astype(int)
     df['Target_7d'] = (ret_7d > thresh_7d).astype(int)
