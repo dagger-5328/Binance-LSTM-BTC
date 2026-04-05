@@ -1,0 +1,15 @@
+# Core Data & ML
+numpy
+pandas
+scikit-learn
+joblib
+tensorflow>=2.10.0
+
+# API Backend
+fastapi
+uvicorn
+pydantic
+
+# Dashboard UI
+streamlit
+requests
