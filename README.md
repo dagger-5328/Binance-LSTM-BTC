@@ -23,7 +23,7 @@ The model is optimized for **Generalization**. These results represent its abili
 | Horizon | Test Accuracy | Generalization Status |
 | :--- | :--- | :--- |
 | **3-Day** | **~56%** | Stable Momentum Capture |
-| **7-Day** | **~74%** | Professional Trend ID |
+| **7-Day** | **~61%** | Professional Trend ID |
 
 > [!IMPORTANT]
 > This "Production Model" (V9) has been stressed against **Distribution Shift**. Even during the extreme 98% Downtrend in our latest test window, the model maintained structural integrity without diverging (Training/Validation loss gap < 0.2).
