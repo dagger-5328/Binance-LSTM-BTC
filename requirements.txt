@@ -1,15 +1,16 @@
-# Core Data & ML
+# Core ML
 numpy
 pandas
 scikit-learn
 joblib
 tensorflow>=2.10.0
 
-# API Backend
+# API
 fastapi
 uvicorn
 pydantic
 
-# Dashboard UI
+# Dashboard
 streamlit
 requests
+plotly
