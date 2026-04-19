@@ -1,7 +1,7 @@
 """
 model.py — LSTM + Temporal Attention Architecture
 ---------------------------------------------------
-Components: TemporalAttention layer, FocalLoss, build_model
+Components: TemporalAttention layer, build_model
 """
 import tensorflow as tf
 from tensorflow.keras.layers import (Input, LSTM, Dense, Dropout,
@@ -34,7 +34,7 @@ class TemporalAttention(Layer):
 
 
 def build_model(input_shape):
-    """LSTM(64)->LSTM(32)->Attention->BatchNorm->Dense->sigmoid(2)"""
+    """LSTM -> Attention -> LayerNorm -> Dense -> sigmoid multi-output head."""
     inputs = Input(shape=input_shape)
     x = inputs
     for units in LSTM_UNITS:

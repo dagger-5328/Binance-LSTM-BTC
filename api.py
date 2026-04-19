@@ -6,6 +6,7 @@ FastAPI backend serving predictions and model performance data.
 
 import json, os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict
 from core import ModelEngine
@@ -18,6 +19,15 @@ app = FastAPI(
 )
 
 engine = ModelEngine()
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",") if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class HorizonPrediction(BaseModel):
@@ -31,6 +41,7 @@ class IndicatorInfo(BaseModel):
 class IndicatorObject(BaseModel):
     rsi: IndicatorInfo
     ema_diff: IndicatorInfo
+    bb_pos: IndicatorInfo
     momentum: float
     up_trend: float
 
@@ -39,6 +50,7 @@ class CryptoResponse(BaseModel):
     latest_price: float
     predictions: Dict[str, HorizonPrediction]
     indicators: IndicatorObject
+    history: list[float]
 
 
 @app.get("/")
@@ -46,6 +58,26 @@ def health():
     return {
         "status": "operational",
         "model_loaded": engine.ready,
+        "assets": COINS,
+        "error": engine.last_error
+    }
+
+
+@app.get("/healthz")
+def healthz():
+    return {
+        "status": "ok",
+        "service": "api"
+    }
+
+
+@app.get("/readyz")
+def readyz():
+    if not engine.ready:
+        raise HTTPException(503, engine.last_error or "Model not ready")
+    return {
+        "status": "ready",
+        "service": "api",
         "assets": COINS
     }
 
@@ -66,7 +98,8 @@ def get_prediction(symbol: str):
         "coin": symbol,
         "latest_price": res["latest_price"],
         "predictions": res["predictions"],
-        "indicators": res["indicators"]
+        "indicators": res["indicators"],
+        "history": res["history"]
     }
 
 
@@ -90,4 +123,6 @@ def get_backtest():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

@@ -11,11 +11,10 @@ import os, json
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import load_model
 
 from config import *
-from features import fetch_data, engineer_features, create_sequences
+from features import fetch_data, engineer_features
 from model import TemporalAttention
 
 def run_backtest(horizon='3d'):
@@ -115,12 +114,17 @@ def run_backtest(horizon='3d'):
         peak = np.maximum.accumulate(equity)
         max_dd = float(np.min((equity - peak) / peak))
         
+        # Win rate of trades (LONG signals that were profitable)
+        longs_only = strat_ret[trades_df['signal'] == 'LONG']
+        win_rate = float((longs_only > 0).mean() * 100) if len(longs_only) > 0 else 0.0
+        
         print(f"  {scenario_name:<15} | {cum_strategy*100:>+9.2f}% | {sharpe:>6.2f} | {max_dd*100:>+7.2f}%")
         
         scenario_results[scenario_name] = {
             'return': round(cum_strategy * 100, 2),
             'sharpe': round(sharpe, 2),
             'max_dd': round(max_dd * 100, 2),
+            'win_rate': round(win_rate, 1),
             'equity_curve': [float(x) for x in equity.tolist()]
         }
 

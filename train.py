@@ -2,7 +2,7 @@
 train.py — Walk-Forward Training Pipeline (V2)
 ------------------------------------------------
 V2 improvements:
-  - Uses LSTM+Attention model with FocalLoss
+  - Uses LSTM+Attention model
   - Threshold optimization (Youden's J) instead of fixed 0.5
   - Confusion matrix + precision/recall reporting
   - Saves optimized thresholds for deployment
@@ -72,7 +72,7 @@ def evaluate(model, X_test, y_test, thresholds=None):
 def main():
     print("=" * 60)
     print("  WALK-FORWARD TRAINING PIPELINE (V2)")
-    print("  LSTM + Attention | Focal Loss | Threshold Optimization")
+    print("  LSTM + Attention | Threshold Optimization")
     print("=" * 60)
 
     # ---- Step 1: Load & Engineer ----
@@ -243,7 +243,7 @@ def main():
         'n_folds': N_FOLDS, 'purge_gap': PURGE_GAP,
         'coins': COINS, 'n_features': len(FEATURES),
         'n_timesteps': N_TIMESTEPS,
-        'architecture': 'LSTM+Attention+FocalLoss',
+        'architecture': 'LSTM+Attention+LayerNorm',
         'thresholds': best_thresholds,
         'summary': summary, 'folds': all_fold_results
     }
