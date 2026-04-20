@@ -1,5 +1,7 @@
 __pycache__/
-models/
+models/*
+!models/model.h5
+!models/scaler.pkl
 data/cache/
 *.pyc
 .env
