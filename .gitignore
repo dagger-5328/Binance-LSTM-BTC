@@ -1,6 +1,6 @@
 __pycache__/
 models/*
-!models/model.h5
+!models/model.keras
 !models/scaler.pkl
 data/cache/
 *.pyc
