@@ -46,7 +46,7 @@ N_FOLDS = 3
 PURGE_GAP = 192  # 8 days
 
 # --- Paths ---
-MODEL_PATH = 'models/model.h5'
+MODEL_PATH = 'models/model.keras'
 SCALER_PATH = 'models/scaler.pkl'
 METRICS_PATH = 'models/metrics.json'
 BACKTEST_PATH = 'models/backtest.json'
