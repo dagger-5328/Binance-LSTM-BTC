@@ -1,0 +1,227 @@
+{
+  "n_folds": 3,
+  "purge_gap": 192,
+  "coins": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT"
+  ],
+  "n_features": 19,
+  "n_timesteps": 48,
+  "architecture": "LSTM+Attention+FocalLoss",
+  "thresholds": {
+    "3d": 0.5964464545249939,
+    "7d": 0.468948096036911
+  },
+  "summary": {
+    "3d": {
+      "accuracy": {
+        "mean": 0.6924,
+        "std": 0.0402
+      },
+      "f1": {
+        "mean": 0.6857,
+        "std": 0.0163
+      },
+      "mcc": {
+        "mean": 0.4032,
+        "std": 0.0803
+      },
+      "auc": {
+        "mean": 0.7688,
+        "std": 0.0336
+      },
+      "precision": {
+        "mean": 0.6956,
+        "std": 0.1133
+      },
+      "recall": {
+        "mean": 0.7018,
+        "std": 0.0779
+      },
+      "baseline": {
+        "mean": 0.5218,
+        "std": 0.0227
+      },
+      "threshold": {
+        "mean": 0.5062,
+        "std": 0.1461
+      }
+    },
+    "7d": {
+      "accuracy": {
+        "mean": 0.5792,
+        "std": 0.0487
+      },
+      "f1": {
+        "mean": 0.6036,
+        "std": 0.0491
+      },
+      "mcc": {
+        "mean": 0.1932,
+        "std": 0.1078
+      },
+      "auc": {
+        "mean": 0.615,
+        "std": 0.0641
+      },
+      "precision": {
+        "mean": 0.5665,
+        "std": 0.0698
+      },
+      "recall": {
+        "mean": 0.6802,
+        "std": 0.1617
+      },
+      "baseline": {
+        "mean": 0.5172,
+        "std": 0.0172
+      },
+      "threshold": {
+        "mean": 0.3757,
+        "std": 0.0703
+      }
+    }
+  },
+  "folds": [
+    {
+      "3d": {
+        "accuracy": 0.6479,
+        "f1": 0.6628,
+        "mcc": 0.3248,
+        "auc": 0.7298,
+        "precision": 0.5789,
+        "recall": 0.7751,
+        "baseline": 0.5536,
+        "threshold": 0.6222,
+        "class_balance": 0.4464,
+        "n_samples": 2948,
+        "confusion_matrix": [
+          [
+            890,
+            742
+          ],
+          [
+            296,
+            1020
+          ]
+        ]
+      },
+      "7d": {
+        "accuracy": 0.5787,
+        "f1": 0.6641,
+        "mcc": 0.2568,
+        "auc": 0.6503,
+        "precision": 0.5234,
+        "recall": 0.9083,
+        "baseline": 0.5414,
+        "threshold": 0.3591,
+        "class_balance": 0.4586,
+        "n_samples": 2948,
+        "confusion_matrix": [
+          [
+            478,
+            1118
+          ],
+          [
+            124,
+            1228
+          ]
+        ]
+      }
+    },
+    {
+      "3d": {
+        "accuracy": 0.6839,
+        "f1": 0.6954,
+        "mcc": 0.3714,
+        "auc": 0.7648,
+        "precision": 0.6588,
+        "recall": 0.7363,
+        "baseline": 0.5098,
+        "threshold": 0.3001,
+        "class_balance": 0.4902,
+        "n_samples": 2948,
+        "confusion_matrix": [
+          [
+            952,
+            551
+          ],
+          [
+            381,
+            1064
+          ]
+        ]
+      },
+      "7d": {
+        "accuracy": 0.5197,
+        "f1": 0.5438,
+        "mcc": 0.0414,
+        "auc": 0.5251,
+        "precision": 0.5112,
+        "recall": 0.5809,
+        "baseline": 0.5071,
+        "threshold": 0.2991,
+        "class_balance": 0.4929,
+        "n_samples": 2948,
+        "confusion_matrix": [
+          [
+            688,
+            807
+          ],
+          [
+            609,
+            844
+          ]
+        ]
+      }
+    },
+    {
+      "3d": {
+        "accuracy": 0.7453,
+        "f1": 0.699,
+        "mcc": 0.5135,
+        "auc": 0.8119,
+        "precision": 0.8491,
+        "recall": 0.594,
+        "baseline": 0.502,
+        "threshold": 0.5964,
+        "class_balance": 0.498,
+        "n_samples": 2948,
+        "confusion_matrix": [
+          [
+            1325,
+            155
+          ],
+          [
+            596,
+            872
+          ]
+        ]
+      },
+      "7d": {
+        "accuracy": 0.6391,
+        "f1": 0.603,
+        "mcc": 0.2815,
+        "auc": 0.6697,
+        "precision": 0.665,
+        "recall": 0.5515,
+        "baseline": 0.5031,
+        "threshold": 0.4689,
+        "class_balance": 0.4969,
+        "n_samples": 2948,
+        "confusion_matrix": [
+          [
+            1076,
+            407
+          ],
+          [
+            657,
+            808
+          ]
+        ]
+      }
+    }
+  ]
+}
