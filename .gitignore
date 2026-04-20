@@ -2,6 +2,7 @@ __pycache__/
 models/*
 !models/model.keras
 !models/scaler.pkl
+!models/metrics.json
 data/cache/
 *.pyc
 .env
