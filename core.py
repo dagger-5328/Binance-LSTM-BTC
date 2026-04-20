@@ -30,7 +30,7 @@ class ModelEngine:
 
         try:
             custom_objects = {'TemporalAttention': TemporalAttention}
-            self.model = load_model(MODEL_PATH, custom_objects=custom_objects)
+            self.model = load_model(MODEL_PATH, custom_objects=custom_objects, compile=False)
             self.scaler = joblib.load(SCALER_PATH)
 
             if os.path.exists(METRICS_PATH):
