@@ -234,7 +234,7 @@ def main():
     # ---- Step 4: Save ----
     os.makedirs('models', exist_ok=True)
     if best_model:
-        best_model.save(MODEL_PATH)
+        best_model.save("models/model.h5")
         joblib.dump(best_scaler, SCALER_PATH)
         print(f"\n[+] Model -> {MODEL_PATH}")
         print(f"[+] Scaler -> {SCALER_PATH}")
