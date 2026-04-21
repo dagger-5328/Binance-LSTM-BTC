@@ -1,9 +1,9 @@
 __pycache__/
 models/*
-!models/model.keras
 !models/scaler.pkl
 !models/model.h5
 !models/metrics.json
 data/cache/
 *.pyc
 .env
+tf_env/

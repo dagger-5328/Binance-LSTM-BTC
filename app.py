@@ -227,24 +227,14 @@ def render_backtest_tab():
 
 
 def main():
-    engine = get_engine()
-
-    # 🔍 DEBUG START (add this)
-    import os
-    st.write("Root files:", os.listdir())
-
-    if os.path.exists("models"):
-        st.write("Models folder:", os.listdir("models"))
-    else:
-        st.write("No models folder found")
-    # 🔍 DEBUG END
-
     st.set_page_config(
         page_title="Crypto Pulse Analytics",
         page_icon="C",
         layout="wide",
         initial_sidebar_state="expanded",
     )
+
+    engine = get_engine()
 
     st.markdown(
         """

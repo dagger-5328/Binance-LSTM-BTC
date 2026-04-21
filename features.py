@@ -100,8 +100,7 @@ def engineer_features(df):
     std20 = df['Close'].rolling(20).std()
     df['BB_pos'] = (df['Close'] - sma20) / (2 * std20 + 1e-9)
 
-    # Volatility & trend
-    df['Volatility'] = df['Close'].pct_change().rolling(10).std()
+    # Trend
     df['Up_Trend'] = (df['Close'].diff() > 0).rolling(5).mean()
 
     # Direction lags (shifted by 1)
