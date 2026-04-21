@@ -1,5 +1,4 @@
 .git
 __pycache__
 *.pyc
-data/cache
 tf_env

@@ -125,6 +125,8 @@ docker build -f Dockerfile.streamlit -t crypto-pulse-ui .
 docker run -p 8501:8501 crypto-pulse-ui
 ```
 
+**Note**: The same geo-blocking considerations apply to Streamlit deployment as the API.
+
 ## Notes
 
 - Live predictions require network access to Binance.
@@ -137,3 +139,32 @@ docker run -p 8501:8501 crypto-pulse-ui
 
 This project is for educational and portfolio purposes only. It is not
 financial advice.
+
+## Streamlit Cloud
+### Direct Deployment
+
+You can deploy directly to Streamlit Cloud:
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. Connect your GitHub repository
+3. Select `app.py` as the main file
+4. Set the secret `ALLOW_STALE_CACHE` to `true`
+5. Deploy!
+
+**Note**: The cached data and trained model are already committed to the repository.
+
+For Streamlit Cloud deployment:
+
+1. Pre-cache data locally:
+   ```bash
+   python cache_data.py
+   ```
+
+2. Commit the cached data:
+   ```bash
+   git add data/cache/
+   git commit -m "Add cached Binance data for deployment"
+   ```
+
+3. Deploy to Streamlit Cloud with these secrets:
+   - `ALLOW_STALE_CACHE`: `true`

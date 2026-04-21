@@ -4,11 +4,15 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8501
+ENV ALLOW_STALE_CACHE=true
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# Try to cache data, but don't fail the build if it can't access Binance
+RUN python cache_data.py || echo "Data caching failed, proceeding with existing cache if available"
 
 EXPOSE 8501
 

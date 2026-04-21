@@ -4,6 +4,6 @@ models/*
 !models/scaler.pkl
 !models/model.h5
 !models/metrics.json
-data/cache/
 *.pyc
 .env
+.streamlit/secrets.toml
