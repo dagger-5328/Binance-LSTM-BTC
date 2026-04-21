@@ -29,7 +29,8 @@ def fetch_data(symbol, total_candles=4000):
 
     if os.path.exists(cache_file):
         age_hrs = (time.time() - os.path.getmtime(cache_file)) / 3600
-        if age_hrs < 12:
+        # Use cached data if fresh (<12h) OR if Binance is likely blocked (older cache is better than no data)
+        if age_hrs < 12 or (age_hrs < 168 and os.getenv("ALLOW_STALE_CACHE", "false").lower() == "true"):
             return pd.read_csv(cache_file, parse_dates=['Open time'])
 
     all_rows, end_time, remaining = [], None, total_candles
@@ -65,6 +66,11 @@ def fetch_data(symbol, total_candles=4000):
             break
 
     if not all_rows:
+        # Check if we have cached data and the error is geo-blocking (451)
+        if os.path.exists(cache_file) and last_error and "451" in last_error:
+            print(f"  Using cached data for {symbol} (Binance geo-blocked)")
+            return pd.read_csv(cache_file, parse_dates=['Open time'])
+        
         empty_df = pd.DataFrame()
         if last_error:
             empty_df.attrs["fetch_error"] = f"Binance request failed for {symbol}: {last_error}"
