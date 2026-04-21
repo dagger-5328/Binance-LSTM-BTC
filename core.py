@@ -69,7 +69,12 @@ class ModelEngine:
         try:
             raw = fetch_data(symbol, total_candles=500)
             if raw.empty:
-                return {"error": f"Could not fetch data for {symbol}"}
+                return {
+                    "error": raw.attrs.get(
+                        "fetch_error",
+                        f"Could not fetch data for {symbol}",
+                    )
+                }
 
             df = engineer_features(raw)
             if len(df) < N_TIMESTEPS:

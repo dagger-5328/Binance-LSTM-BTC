@@ -4,10 +4,23 @@ features.py — Leak-Free Feature Engineering (V2)
 V2 changes: Uses OHLC data, adds ATR, Bollinger position,
 multi-scale returns, volume ratio. Drops coin_id.
 """
-import os, time, requests
+import os
+import time
+
 import numpy as np
 import pandas as pd
+import requests
 from config import INTERVAL, HORIZONS, CACHE_DIR
+
+BINANCE_BASE_URLS = [
+    url.strip()
+    for url in os.getenv(
+        "BINANCE_BASE_URLS",
+        "https://api.binance.com,https://api1.binance.com,https://api3.binance.com",
+    ).split(",")
+    if url.strip()
+]
+REQUEST_HEADERS = {"User-Agent": "crypto-pulse/1.0"}
 
 def fetch_data(symbol, total_candles=4000):
     """Fetch hourly OHLCV from Binance with pagination + caching."""
@@ -20,18 +33,28 @@ def fetch_data(symbol, total_candles=4000):
             return pd.read_csv(cache_file, parse_dates=['Open time'])
 
     all_rows, end_time, remaining = [], None, total_candles
+    last_error = None
     while remaining > 0:
         batch = min(1000, remaining)
-        url = (f"https://api.binance.com/api/v3/klines"
-               f"?symbol={symbol}&interval={INTERVAL}&limit={batch}")
-        if end_time:
-            url += f"&endTime={end_time}"
-        try:
-            resp = requests.get(url, timeout=15)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            print(f"  Warning: API error for {symbol}: {e}")
+        data = None
+
+        for base_url in BINANCE_BASE_URLS:
+            url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&limit={batch}"
+            if end_time:
+                url += f"&endTime={end_time}"
+
+            try:
+                resp = requests.get(url, timeout=15, headers=REQUEST_HEADERS)
+                resp.raise_for_status()
+                data = resp.json()
+                if isinstance(data, dict):
+                    raise RuntimeError(data.get("msg", f"Unexpected response from {base_url}"))
+                break
+            except Exception as exc:
+                last_error = f"{base_url}: {exc}"
+
+        if data is None:
+            print(f"  Warning: API error for {symbol}: {last_error}")
             break
         if not data:
             break
@@ -42,7 +65,10 @@ def fetch_data(symbol, total_candles=4000):
             break
 
     if not all_rows:
-        return pd.DataFrame()
+        empty_df = pd.DataFrame()
+        if last_error:
+            empty_df.attrs["fetch_error"] = f"Binance request failed for {symbol}: {last_error}"
+        return empty_df
 
     seen = set()
     unique = [r for r in all_rows if r[0] not in seen and not seen.add(r[0])]

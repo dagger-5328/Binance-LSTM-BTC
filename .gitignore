@@ -1,4 +1,5 @@
 __pycache__/
+tf_env/
 models/*
 !models/scaler.pkl
 !models/model.h5
@@ -6,4 +7,3 @@ models/*
 data/cache/
 *.pyc
 .env
-tf_env/
