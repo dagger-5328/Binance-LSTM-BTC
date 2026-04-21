@@ -3,6 +3,7 @@ tf_env/
 models/*
 !models/scaler.pkl
 !models/model.h5
+!models/model.keras
 !models/metrics.json
 *.pyc
 .env
