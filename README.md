@@ -99,12 +99,24 @@ Main endpoints:
 
 ## Docker
 
-Build and run the API container:
+**Important**: If deploying to environments where Binance API is geo-blocked (returns 451 errors), you must pre-cache data locally before building:
 
 ```bash
+# Pre-cache data (run on a machine with Binance access)
+python cache_data.py
+
+# Then build the Docker image
 docker build -f Dockerfile.api -t crypto-pulse-api .
 docker run -p 8000:8000 crypto-pulse-api
 ```
+
+Environment variables for deployment:
+
+- `ALLOW_STALE_CACHE=true`: Allow using cached data even if older than 12 hours
+- `HTTP_PROXY` or `HTTPS_PROXY`: Use a proxy server to access Binance API
+- `BINANCE_BASE_URLS`: Comma-separated list of Binance API endpoints to try
+
+Build and run the API container:
 
 Build and run the Streamlit container:
 
@@ -116,6 +128,7 @@ docker run -p 8501:8501 crypto-pulse-ui
 ## Notes
 
 - Live predictions require network access to Binance.
+- If you encounter "451 Client Error" (geo-blocking), use a proxy server or pre-cache data locally.
 - Trained artifacts are expected in `models/`.
 - Backtest output is written to `models/backtest.json`.
 - Walk-forward metrics are written to `models/metrics.json`.

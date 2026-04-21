@@ -10,7 +10,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN python train.py
+
+# Try to train the model, but don't fail the build if it can't access Binance
+RUN python cache_data.py && python train.py || (echo "Training failed, proceeding with cached artifacts if available" && ls -la models/)
 
 EXPOSE 8000
 

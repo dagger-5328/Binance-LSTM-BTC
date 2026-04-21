@@ -22,15 +22,24 @@ BINANCE_BASE_URLS = [
 ]
 REQUEST_HEADERS = {"User-Agent": "crypto-pulse/1.0"}
 
+# Proxy configuration for geo-blocked deployments
+PROXIES = None
+proxy_url = os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
+if proxy_url:
+    PROXIES = {"http": proxy_url, "https": proxy_url}
+
 def fetch_data(symbol, total_candles=4000):
     """Fetch hourly OHLCV from Binance with pagination + caching."""
     os.makedirs(CACHE_DIR, exist_ok=True)
     cache_file = os.path.join(CACHE_DIR, f"{symbol}_{total_candles}_ohlcv.csv")
 
+    allow_stale_cache = os.getenv("ALLOW_STALE_CACHE", "false").lower() == "true"
+
     if os.path.exists(cache_file):
         age_hrs = (time.time() - os.path.getmtime(cache_file)) / 3600
         # Use cached data if fresh (<12h) OR if Binance is likely blocked (older cache is better than no data)
-        if age_hrs < 12:
+        # OR if ALLOW_STALE_CACHE is enabled
+        if age_hrs < 12 or allow_stale_cache:
             return pd.read_csv(cache_file, parse_dates=['Open time'])
         elif age_hrs < 168:  # 7 days
             print(f"  Using stale cache for {symbol} (age: {age_hrs:.1f}h, Binance likely blocked)")
@@ -48,7 +57,7 @@ def fetch_data(symbol, total_candles=4000):
                 url += f"&endTime={end_time}"
 
             try:
-                resp = requests.get(url, timeout=15, headers=REQUEST_HEADERS)
+                resp = requests.get(url, timeout=15, headers=REQUEST_HEADERS, proxies=PROXIES)
                 resp.raise_for_status()
                 data = resp.json()
                 if isinstance(data, dict):
