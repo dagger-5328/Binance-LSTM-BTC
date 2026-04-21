@@ -236,9 +236,9 @@ def main():
     # ---- Step 4: Save ----
     os.makedirs('models', exist_ok=True)
     if best_model:
-        best_model.save("models/model.h5")
+        best_model.save("models/model.keras")
         joblib.dump(best_scaler, "models/scaler.pkl")
-        print("\n[+] Model -> models/model.h5")
+        print("\n[+] Model -> models/model.keras")
         print(f"[+] Scaler -> {SCALER_PATH}")
 
     report = {
