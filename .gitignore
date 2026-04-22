@@ -13,11 +13,12 @@ tf_env/
 data/*
 !data/.gitkeep
 
-# Allow small model artifacts for deployment
-models/*.h5
-models/*.pkl
-models/*.json
+# Properly INCLUDE model artifacts for deployment
+models/*
 !models/.gitkeep
+!models/*.h5
+!models/*.pkl
+!models/*.json
 
 # IDEs & OS
 .vscode/
