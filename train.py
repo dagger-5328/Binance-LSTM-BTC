@@ -82,7 +82,7 @@ def main():
         else:
             df_raw = fetch_data(symbol, limit=3000)
         
-        df = apply_market_features(df_raw, cid, None)
+        df = apply_market_features(df_raw, cid, None, is_training=True)
         
         # Ensure no NaN values remain
         df = df.dropna()

@@ -79,9 +79,6 @@ def fetch_data(symbol, limit=2000, months_back_start=None, months_back_end=None)
     except Exception as e:
         print(f"Error fetching {symbol}: {e}")
         return pd.DataFrame()
-    except Exception as e:
-        print(f"Error fetching {symbol}: {e}")
-        return pd.DataFrame()
 
 # --- MARKET CONTEXT ENGINE ---
 def get_market_pulse(limit=100):
@@ -96,9 +93,10 @@ def get_market_pulse(limit=100):
         return pd.concat(returns, axis=1).mean(axis=1).fillna(0)
     return pd.Series([0] * limit)
 
-def apply_market_features(df, coin_id, market_returns=None):
+def apply_market_features(df, coin_id, market_returns=None, is_training=False):
     """
     Fixed feature engineering pipeline to remove Look-ahead Bias.
+    is_training: If True, calculates targets and drops NaNs.
     """
     df = df.copy().reset_index(drop=True)
     
@@ -130,7 +128,7 @@ def apply_market_features(df, coin_id, market_returns=None):
     # Trend Indicator
     df['Up_Trend'] = (df['Close'].diff() > 0).rolling(5).mean()
     
-    # 5. Lagged Returns (ret_1, ret_2, ret_3)
+    # 5. Lagged Returns
     df['ret_1'] = df['Close'].pct_change(1)
     df['ret_2'] = df['Close'].pct_change(2)
     df['ret_3'] = df['Close'].pct_change(3)
@@ -138,29 +136,26 @@ def apply_market_features(df, coin_id, market_returns=None):
     # 6. EMA Difference (10-period vs 20-period)
     df['EMA_diff_10_20'] = (df['Close'].ewm(span=10).mean() - df['Close'].ewm(span=20).mean()) / (df['Close'] + 1e-9)
     
-    # 7. Rolling Volatility (std of returns over 10-period window)
+    # 7. Rolling Volatility
     df['Rolling_Vol_10'] = df['Close'].pct_change().rolling(10).std()
 
-    # 5. Multi-Horizon Targets (FIXED - Absolute Return Thresholds)
-    # Using fixed thresholds prevents regime shift bias vs. median split
-    ret_3d = (df['Close'].shift(-72) - df['Close']) / df['Close']
-    ret_7d = (df['Close'].shift(-168) - df['Close']) / df['Close']
-
-    # Fixed thresholds: 0.5% return = UP (avoids regime dependency)
-    thresh_3d = 0.005
-    thresh_7d = 0.005
-
-    df['Target_3d'] = (ret_3d > thresh_3d).astype(int)
-    df['Target_7d'] = (ret_7d > thresh_7d).astype(int)
-
-    # 6. HISTORICAL LAGS
+    # 8. Historical Lags (Directional)
     df['Lag_1'] = (df['Close'] > df['Close'].shift(1)).shift(1).astype(float)
     df['Lag_2'] = (df['Close'] > df['Close'].shift(4)).shift(1).astype(float)
     df['Lag_3'] = (df['Close'] > df['Close'].shift(24)).shift(1).astype(float)
     
     df['coin_id'] = coin_id
+
+    # 9. Targets (ONLY for training)
+    if is_training:
+        ret_3d = (df['Close'].shift(-72) - df['Close']) / df['Close']
+        ret_7d = (df['Close'].shift(-168) - df['Close']) / df['Close']
+        df['Target_3d'] = (ret_3d > 0.005).astype(int)
+        df['Target_7d'] = (ret_7d > 0.005).astype(int)
+        return df.dropna()
     
-    return df.dropna()
+    # For inference, only drop rows that don't have enough history for indicators
+    return df.dropna(subset=FEATURES)
 
 # --- PREDICTOR ENGINE ---
 class ModelEngine:
