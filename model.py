@@ -1,4 +1,4 @@
-﻿"""
+"""
 LSTM Model Architecture with Temporal Attention
 ===============================================
 Custom TemporalAttention layer for focusing on relevant timesteps.
@@ -52,6 +52,10 @@ class TemporalAttention(tf.keras.layers.Layer):
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[2])
+
+    def get_config(self):
+        config = super(TemporalAttention, self).get_config()
+        return config
 
 
 def build_model(input_shape, horizons=2):
