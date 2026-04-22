@@ -79,6 +79,23 @@ def fetch_data(symbol, limit=2000, months_back_start=None, months_back_end=None)
     
     return pd.DataFrame()
 
+# --- MARKET CONTEXT ENGINE ---
+def get_market_pulse(limit=100):
+    """Calculates the average global return across our basket for RS calculation."""
+    try:
+        returns = []
+        # Only check major coins for context to save on API calls
+        for sym in COINS[:3]: 
+            df = fetch_data(sym, limit=limit)
+            if not df.empty:
+                returns.append(df['Close'].pct_change())
+        
+        if returns:
+            return pd.concat(returns, axis=1).mean(axis=1).fillna(0)
+    except Exception:
+        pass
+    return pd.Series([0] * limit)
+
 def apply_market_features(df, coin_id, market_returns=None, is_training=False):
     """
     Fixed feature engineering pipeline with empty-data safety checks.
