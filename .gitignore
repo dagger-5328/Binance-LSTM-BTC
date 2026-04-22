@@ -16,7 +16,8 @@ data/*
 # Properly INCLUDE model artifacts for deployment
 models/*
 !models/.gitkeep
-!models/*.keras
+!models/model_config.json
+!models/model.weights.h5
 !models/*.pkl
 !models/*.json
 

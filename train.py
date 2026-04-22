@@ -228,11 +228,18 @@ def main():
 
     print("\n" + "="*50)
 
-    # ---------------- SAVE ----------------
+    # ---------------- SAVE (ROBUST FORMAT) ----------------
     os.makedirs("models", exist_ok=True)
-    model.save("models/model.keras")
+    
+    # Save architecture
+    with open("models/model_config.json", "w") as f:
+        f.write(model.to_json())
+    
+    # Save weights
+    model.save_weights("models/model.weights.h5")
+    
     joblib.dump(scaler, "models/scaler.pkl")
-    print(f"\n[+] Production Model (V7) saved successfully.")
+    print(f"\n[+] Production Model (V7) saved successfully (Architecture + Weights).")
 
 if __name__ == "__main__":
     main()
