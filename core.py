@@ -170,21 +170,18 @@ class ModelEngine:
     def _load(self):
         # Use absolute paths to prevent CWD issues
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.config_path = os.path.join(base_dir, 'models', 'model_config.json')
         self.weights_path = os.path.join(base_dir, 'models', 'model.weights.h5')
         self.scaler_path = os.path.join(base_dir, 'models', 'scaler.pkl')
         self.metrics_path = os.path.join(base_dir, 'models', 'metrics.json')
 
-        if os.path.exists(self.config_path) and os.path.exists(self.weights_path):
+        if os.path.exists(self.weights_path) and os.path.exists(self.scaler_path):
             try:
-                # 1. Load architecture from JSON
-                with open(self.config_path, 'r') as f:
-                    model_json = f.read()
+                # 1. Build the model architecture directly from code
+                # This bypasses all JSON/Keras serialization bugs
+                from model import build_model
+                self.model = build_model(input_shape=(N_TIMESTEPS, len(FEATURES)))
                 
-                # 2. Reconstruct model (requires custom_objects for custom layers)
-                self.model = keras.models.model_from_json(model_json, custom_objects={'TemporalAttention': TemporalAttention})
-                
-                # 3. Load weights into the architecture
+                # 2. Load the weights into the fresh architecture
                 self.model.load_weights(self.weights_path)
                 
                 self.scaler = joblib.load(self.scaler_path)
@@ -195,13 +192,13 @@ class ModelEngine:
                         self.threshold = metrics_data.get('threshold', 0.5)
                 
                 self.ready = True
-                print(f"[+] Model engine initialized (Architecture + Weights)")
+                print(f"[+] Model engine initialized (Code-built Architecture + Weights)")
             except Exception as e:
                 self.last_error = str(e)
                 print(f"[!] Error loading model artifacts: {e}")
                 self.ready = False
         else:
-            self.last_error = f"Files missing: {self.config_path} or {self.weights_path}"
+            self.last_error = f"Files missing: {self.weights_path} or {self.scaler_path}"
             print(f"[!] Model artifacts missing")
             self.ready = False
 
