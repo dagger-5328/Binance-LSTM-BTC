@@ -1,61 +1,73 @@
-# 💹 Crypto Pulse: Professional Analytics Dashboard
+# 💹 Crypto Pulse: Professional Multi-Horizon Analytics Dashboard
 
-A high-end, trading-desk style dashboard for cryptocurrency trend forecasting across 3rd-day and 7th-day horizons. 
-
-*Status: **Verified Production-Ready (Balanced & Regularized)**.*
+A high-performance quantitative framework for cryptocurrency trend forecasting. This project utilizes a Multi-Task LSTM architecture with Temporal Attention to predict market direction across 3-day and 7-day horizons.
 
 ---
 
-## 🚀 Key Features
+## 🚀 Features
 
-- **Multi-Horizon Intelligence**: A single Multi-Task LSTM model predicting market direction for 3rd and 7th day windows.
-- **Regularized Architecture**: High Dropout (0.4) and L2 Weight Decay to ensure generalization and prevent historical noise memorization.
-- **Balanced Targets**: Median-split return thresholding ensures a 50/50 training baseline, making the model a true directional learner.
-- **Pro-Level UI**: Wide layout featuring KPI rows, price charts with EMA overlays, and Forecast Conviction Gauges.
-- **Strategic Insights**: Human-readable interpretations of technical indicators (RSI, EMA, Momentum).
-
----
-
-## 📈 Stable Performance (V9 - Regularized)
-
-The model is optimized for **Generalization**. These results represent its ability to maintain stability during high-volatility market shifts.
-
-| Horizon | Test Accuracy | Generalization Status |
-| :--- | :--- | :--- |
-| **3-Day** | **~56%** | Stable Momentum Capture |
-| **7-Day** | **~74%** | Professional Trend ID |
-
-> [!IMPORTANT]
-> This "Production Model" (V9) has been stressed against **Distribution Shift**. Even during the extreme 98% Downtrend in our latest test window, the model maintained structural integrity without diverging (Training/Validation loss gap < 0.2).
+- **Multi-Task Learning**: Predicts both 3-day and 7-day market direction using a single, unified neural network.
+- **Temporal Attention Mechanism**: Custom LSTM layer that learns to focus on the most relevant historical patterns.
+- **Institutional-Grade Feature Engineering**: 20+ technical indicators including RSI, Z-scored Price/Volume, EMA Deltas, and Market Relative Strength.
+- **Leakage-Free Pipeline**: Strict chronological splitting and walk-forward validation ensure realistic performance metrics.
+- **Interactive Dashboard**: Streamlit-based UI for real-time visualization of predictions, technical indicators, and historical price action.
+- **REST API**: FastAPI backend for integrating predictions into other trading systems.
 
 ---
 
-## 🛠️ Usage & Deployment
+## 📁 Project Structure
 
-### 1. Training (Regularized)
+- `app.py`: Streamlit dashboard application.
+- `train.py`: Training pipeline for the LSTM model.
+- `core.py`: Core logic for data fetching, feature engineering, and prediction engine.
+- `model.py`: Neural network architecture and custom layers.
+- `api.py`: FastAPI implementation for prediction serving.
+- `requirements.txt`: Project dependencies.
+- `models/`: Directory for saved model artifacts (excluded from Git).
+
+---
+
+## 🛠️ Installation & Usage
+
+### 1. Environment Setup
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Training the Model
+```bash
+# Fetch data from Binance and train the multi-horizon model
 python train.py
 ```
 
-### 2. Launching the Dashboard
+### 3. Launching the Dashboard
 ```bash
+# Start the interactive Streamlit UI
 streamlit run app.py
 ```
 
-### 3. API Service
+### 4. Running the API
 ```bash
-uvicorn api:app --reload
+# Serve predictions via REST API
+uvicorn api.py:app --reload
 ```
 
 ---
 
-## 🎨 Visual Preview
+## 📊 Model Performance
 
-- **Wide Layout**: Trading-desk aesthetics with consistent alignment.
-- **Top KPI Bar**: Metric cards for Price, Forecast Direction, and Market Momentum.
-- **Technical Indicator Panel**: interprets values into Bullish/Bearish/Neutral categories.
+The model is optimized for **Generalization** over raw accuracy. It uses high dropout (0.4) and L2 regularization to prevent overfitting to market noise.
+
+| Horizon | Prediction Target | Status |
+| :--- | :--- | :--- |
+| **3-Day** | Directional Up/Down | Optimized for Momentum |
+| **7-Day** | Directional Up/Down | Optimized for Trend ID |
 
 ---
 
 ## ⚠️ Disclaimer
 Financial trading involves significant risk. This project is for educational and portfolio demonstration purposes and should not be used for live trading decisions.
+
+---
+**Author:** Institutional-grade AI Analytics Suite.

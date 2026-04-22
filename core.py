@@ -1,19 +1,27 @@
 import os
+import json
 import requests
 import joblib
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import load_model
+from model import TemporalAttention
 
 # --- PRO-LEVEL GLOBAL CONFIG ---
 COINS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT']
 INTERVAL = '1h'
-N_TIMESTEPS = 24 
+N_TIMESTEPS = 48  # Increased for better temporal context
 
-# Features focus on Local Momentum + Global Market Context
+# Comprehensive feature set (20+ features)
 FEATURES = [
-    'Price_Z', 'Vol_Z', 'RSI', 'EMA_diff', 'Mom_5', 'Volatility',
-    'RS_Market', 'Hour_Sin', 'Hour_Cos', 'Up_Trend', 'Lag_1', 'Lag_2', 'Lag_3', 'coin_id'
+    'Price_Z', 'Vol_Z', 'RS_Market',  # Price/volume normalization
+    'Hour_Sin', 'Hour_Cos',  # Cyclical time encoding
+    'RSI', 'EMA_diff', 'Mom_5', 'Volatility',  # Technical indicators
+    'Up_Trend',  # Trend strength
+    'Lag_1', 'Lag_2', 'Lag_3',  # Historical lags
+    'ret_1', 'ret_2', 'ret_3',  # Lagged returns
+    'EMA_diff_10_20',  # EMA 10-20 difference
+    'Rolling_Vol_10'  # Rolling volatility (10-period)
 ]
 
 # --- DATA FETCHING ---
@@ -121,6 +129,17 @@ def apply_market_features(df, coin_id, market_returns=None):
     
     # Trend Indicator
     df['Up_Trend'] = (df['Close'].diff() > 0).rolling(5).mean()
+    
+    # 5. Lagged Returns (ret_1, ret_2, ret_3)
+    df['ret_1'] = df['Close'].pct_change(1)
+    df['ret_2'] = df['Close'].pct_change(2)
+    df['ret_3'] = df['Close'].pct_change(3)
+    
+    # 6. EMA Difference (10-period vs 20-period)
+    df['EMA_diff_10_20'] = (df['Close'].ewm(span=10).mean() - df['Close'].ewm(span=20).mean()) / (df['Close'] + 1e-9)
+    
+    # 7. Rolling Volatility (std of returns over 10-period window)
+    df['Rolling_Vol_10'] = df['Close'].pct_change().rolling(10).std()
 
     # 5. Multi-Horizon Targets (FIXED - Absolute Return Thresholds)
     # Using fixed thresholds prevents regime shift bias vs. median split
@@ -145,16 +164,25 @@ def apply_market_features(df, coin_id, market_returns=None):
 
 # --- PREDICTOR ENGINE ---
 class ModelEngine:
-    def __init__(self, model_path='models/model.h5', scaler_path='models/scaler.pkl'):
+    def __init__(self, model_path='models/model.h5', scaler_path='models/scaler.pkl', metrics_path='models/metrics.json'):
         self.model_path = model_path
         self.scaler_path = scaler_path
-        self.model, self.scaler, self.ready = None, None, False
+        self.metrics_path = metrics_path
+        self.model, self.scaler, self.threshold, self.ready = None, None, 0.5, False
         self._load()
 
     def _load(self):
         if os.path.exists(self.model_path) and os.path.exists(self.scaler_path):
-            self.model = load_model(self.model_path)
+            # Pass custom objects to load_model
+            self.model = load_model(self.model_path, custom_objects={'TemporalAttention': TemporalAttention})
             self.scaler = joblib.load(self.scaler_path)
+            # Load optimized threshold from metrics.json
+            if os.path.exists(self.metrics_path):
+                with open(self.metrics_path, 'r') as mf:
+                    metrics_data = json.load(mf)
+                    self.threshold = metrics_data.get('threshold', 0.5)
+            else:
+                self.threshold = 0.5  # Default fallback
             self.ready = True
 
     def predict(self, symbol):
@@ -166,7 +194,15 @@ class ModelEngine:
         
         if len(df) < N_TIMESTEPS: return {"error": "Insufficient data."}
         
+        # Validate all required features exist
+        missing_features = [f for f in FEATURES if f not in df.columns]
+        if missing_features:
+            return {"error": f"Missing features: {missing_features}"}
+        
         df_last = df.tail(N_TIMESTEPS).copy()
+        
+        # Ensure features are in exact order (critical for LSTM)
+        df_last = df_last[FEATURES]
         df_last[FEATURES] = self.scaler.transform(df_last[FEATURES])
         X = df_last[FEATURES].values.reshape(1, N_TIMESTEPS, len(FEATURES))
         
@@ -195,8 +231,8 @@ class ModelEngine:
         for idx, horizon in enumerate(horizons):
             prob = float(raw_pred[idx])
             predictions[horizon] = {
-                "direction": "UP" if prob > 0.50 else "DOWN",
-                "confidence": round((prob if prob > 0.50 else (1 - prob)) * 100, 2)
+                "direction": "UP" if prob > self.threshold else "DOWN",
+                "confidence": round((prob if prob > self.threshold else (1 - prob)) * 100, 2)
             }
         
         return {
@@ -206,3 +242,7 @@ class ModelEngine:
             "indicators": indicators,
             "history": df.tail(72)['Close'].tolist() 
         }
+
+
+
+

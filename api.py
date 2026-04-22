@@ -7,7 +7,7 @@ and detailed relative strength indicators.
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Dict, List
+from typing import Dict
 from core import ModelEngine, COINS
 
 app = FastAPI(

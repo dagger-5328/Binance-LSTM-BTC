@@ -8,12 +8,34 @@ across 3-day and 7-day horizons.
 import streamlit as st
 import pandas as pd
 import numpy as np
+import json
+import os
 
 # Core logic imports (Unified Version)
 from core import ModelEngine, COINS
 
 # Initialization
 engine = ModelEngine()
+
+# Load optimized threshold from metrics.json
+threshold = 0.5  # default fallback
+metrics_path = os.path.join("models", "metrics.json")
+if os.path.exists(metrics_path):
+    try:
+        with open(metrics_path, 'r') as mf:
+            metrics_data = json.load(mf)
+            threshold = metrics_data.get('threshold', 0.5)
+    except Exception as e:
+        st.warning(f"Could not load metrics.json: {e}")
+
+# Verify engine is using same features as training
+if engine.ready:
+    from core import FEATURES, N_TIMESTEPS
+    st.session_state.features_info = {
+        "num_features": len(FEATURES),
+        "timesteps": N_TIMESTEPS,
+        "feature_list": FEATURES
+    }
 
 # --- Page Config & Theme ---
 st.set_page_config(
@@ -69,6 +91,7 @@ with st.sidebar:
     st.subheader("📊 Market Parameters")
     st.caption("Interval: 1-hour Candlesticks")
     st.caption("Architecture: Multi-Horizon Stacked LSTM (V4)")
+    st.caption(f"Decision Threshold: {threshold:.2f}")
     
     st.markdown("---")
     st.subheader("Model Limitations")
@@ -76,7 +99,15 @@ with st.sidebar:
     st.caption("- Markets contain high stochastic noise.")
     st.caption("- NOT financial advice.")
     
-    run_button = st.button("🔥 Update Analytics Data")
+    st.markdown("---")
+    st.subheader("🔧 Debug Info")
+    if 'features_info' in st.session_state:
+        info = st.session_state.features_info
+        st.caption(f"Features: {info['num_features']} | Timesteps: {info['timesteps']}")
+        with st.expander("View feature list"):
+            st.code(str(info['feature_list']), language='python')
+    
+    run_button = st.button("🚀 Run Analysis", use_container_width=True)
 
 # Mapping
 horizon_map = {"3 Days": "3d", "7 Days": "7d"}
