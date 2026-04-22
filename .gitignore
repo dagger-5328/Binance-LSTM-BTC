@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -12,9 +12,12 @@ tf_env/
 # ML Models & Data
 data/*
 !data/.gitkeep
-models/*
+
+# Allow small model artifacts for deployment
+models/*.h5
+models/*.pkl
+models/*.json
 !models/.gitkeep
-!models/metrics.json
 
 # IDEs & OS
 .vscode/
