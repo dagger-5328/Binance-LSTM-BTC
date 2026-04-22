@@ -4,7 +4,7 @@ import requests
 import joblib
 import numpy as np
 import pandas as pd
-import keras
+from tensorflow import keras
 from model import TemporalAttention
 
 # --- PRO-LEVEL GLOBAL CONFIG ---
@@ -164,11 +164,12 @@ def apply_market_features(df, coin_id, market_returns=None):
 
 # --- PREDICTOR ENGINE ---
 class ModelEngine:
-    def __init__(self, model_path='models/model.h5', scaler_path='models/scaler.pkl', metrics_path='models/metrics.json'):
+    def __init__(self, model_path='models/model.keras', scaler_path='models/scaler.pkl', metrics_path='models/metrics.json'):
         self.model_path = model_path
         self.scaler_path = scaler_path
         self.metrics_path = metrics_path
         self.model, self.scaler, self.threshold, self.ready = None, None, 0.5, False
+        self.last_error = "No error recorded."
         self._load()
 
     def _load(self):
@@ -193,14 +194,16 @@ class ModelEngine:
                 self.ready = True
                 print(f"[+] Model engine initialized from {self.model_path}")
             except Exception as e:
+                self.last_error = str(e)
                 print(f"[!] Error loading model artifacts: {e}")
                 self.ready = False
         else:
-            print(f"[!] Model artifacts missing at: {self.model_path} or {self.scaler_path}")
+            self.last_error = f"Files missing: {self.model_path} or {self.scaler_path}"
+            print(f"[!] Model artifacts missing")
             self.ready = False
 
     def predict(self, symbol):
-        if not self.ready: return {"error": "Model not trained."}
+        if not self.ready: return {"error": f"Model initialization failed: {self.last_error}"}
         
         df_raw = fetch_data(symbol, limit=200)
         market_pulse = get_market_pulse(limit=200)
