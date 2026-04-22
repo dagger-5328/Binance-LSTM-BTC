@@ -27,78 +27,65 @@ FEATURES = [
 # --- DATA FETCHING ---
 def fetch_data(symbol, limit=2000, months_back_start=None, months_back_end=None):
     """
-    Fetch historical OHLCV data from Binance with endpoint rotation for reliability.
+    Fetch data from Binance with an automatic Fallback to Yahoo Finance 
+    if the connection is blocked (Common on US Cloud servers).
     """
     from datetime import datetime, timedelta
     
-    # List of endpoints to try if one is rate-limited
-    endpoints = [
-        "https://api.binance.com",
-        "https://api1.binance.com",
-        "https://api2.binance.com",
-        "https://api3.binance.com"
-    ]
-    
-    last_error = ""
+    # 1. TRY BINANCE FIRST
+    endpoints = ["https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com", "https://api3.binance.com"]
     for base_url in endpoints:
         try:
             if months_back_start and months_back_end:
-                # ... [Date range logic remains same, just uses base_url]
                 now = datetime.utcnow()
-                start_date = now - timedelta(days=months_back_start * 30)
-                end_date = now - timedelta(days=months_back_end * 30)
-                start_ms = int(start_date.timestamp() * 1000)
-                end_ms = int(end_date.timestamp() * 1000)
-                
+                start_ms = int((now - timedelta(days=months_back_start * 30)).timestamp() * 1000)
+                end_ms = int((now - timedelta(days=months_back_end * 30)).timestamp() * 1000)
                 url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
-                all_data = []
-                while start_ms < end_ms:
-                    response = requests.get(url, timeout=10)
-                    response.raise_for_status()
-                    data = response.json()
-                    if not data: break
-                    all_data.extend(data)
-                    start_ms = int(data[-1][0]) + 3600000
-                    url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
-                data = all_data
+                response = requests.get(url, timeout=5)
+                response.raise_for_status()
+                data = response.json()
             else:
                 url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&limit={limit}"
-                response = requests.get(url, timeout=10)
+                response = requests.get(url, timeout=5)
                 response.raise_for_status()
                 data = response.json()
             
-            # If we got here, it worked!
             df = pd.DataFrame(data, columns=['time','Open','High','Low','Close','Volume', 'ct','q','n','tb','tq','i'])
             df['Close'] = df['Close'].astype(float)
             df['Volume'] = df['Volume'].astype(float)
             df['Open time'] = pd.to_datetime(df['time'], unit='ms')
             return df[['Open time', 'Close', 'Volume']]
-            
-        except Exception as e:
-            last_error = str(e)
-            continue # Try next endpoint
-            
-    print(f"[!] All Binance endpoints failed for {symbol}. Last error: {last_error}")
-    return pd.DataFrame()
+        except Exception:
+            continue
 
-# --- MARKET CONTEXT ENGINE ---
-def get_market_pulse(limit=100):
-    """Calculates the average global return across our 4-coin basket."""
-    returns = []
-    for coin in COINS:
-        df = fetch_data(coin, limit=limit)
-        if not df.empty:
-            returns.append(df['Close'].pct_change())
+    # 2. FALLBACK TO YAHOO FINANCE (Reliable on US Cloud Servers)
+    try:
+        print(f"[*] Binance blocked. Falling back to Yahoo Finance for {symbol}...")
+        import yfinance as yf
+        # Map Binance symbols to Yahoo symbols (e.g. BTCUSDT -> BTC-USD)
+        yf_symbol = symbol.replace("USDT", "-USD")
+        yf_df = yf.download(yf_symbol, period="30d", interval="1h", progress=False)
+        
+        if not yf_df.empty:
+            yf_df = yf_df.reset_index()
+            yf_df.columns = [c[0] if isinstance(c, tuple) else c for c in yf_df.columns]
+            df = pd.DataFrame()
+            df['Open time'] = yf_df['Datetime']
+            df['Close'] = yf_df['Close'].astype(float)
+            df['Volume'] = yf_df['Volume'].astype(float)
+            return df.tail(limit)
+    except Exception as e:
+        print(f"[!] All data sources failed: {e}")
     
-    if returns:
-        return pd.concat(returns, axis=1).mean(axis=1).fillna(0)
-    return pd.Series([0] * limit)
+    return pd.DataFrame()
 
 def apply_market_features(df, coin_id, market_returns=None, is_training=False):
     """
-    Fixed feature engineering pipeline to remove Look-ahead Bias.
-    is_training: If True, calculates targets and drops NaNs.
+    Fixed feature engineering pipeline with empty-data safety checks.
     """
+    if df.empty or 'Close' not in df.columns:
+        return pd.DataFrame()
+
     df = df.copy().reset_index(drop=True)
     
     # 1. Price/Vol Z-Scores
