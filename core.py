@@ -4,7 +4,7 @@ import requests
 import joblib
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import load_model
+import keras
 from model import TemporalAttention
 
 # --- PRO-LEVEL GLOBAL CONFIG ---
