@@ -27,58 +27,59 @@ FEATURES = [
 # --- DATA FETCHING ---
 def fetch_data(symbol, limit=2000, months_back_start=None, months_back_end=None):
     """
-    Fetch historical OHLCV data from Binance.
-    
-    Args:
-        symbol: Trading pair (e.g., 'BTCUSDT')
-        limit: Number of candles (default 2000, used if no date range specified)
-        months_back_start: How many months back to start (e.g., 12 for 12 months ago)
-        months_back_end: How many months back to end (e.g., 3 for 3 months ago)
-        
-    Example: fetch_data('BTCUSDT', months_back_start=12, months_back_end=3)
-             Fetches data from 12 months ago to 3 months ago
+    Fetch historical OHLCV data from Binance with endpoint rotation for reliability.
     """
     from datetime import datetime, timedelta
     
-    if months_back_start and months_back_end:
-        # Calculate timestamps
-        now = datetime.utcnow()
-        start_date = now - timedelta(days=months_back_start * 30)
-        end_date = now - timedelta(days=months_back_end * 30)
-        start_ms = int(start_date.timestamp() * 1000)
-        end_ms = int(end_date.timestamp() * 1000)
-        
-        # Fetch with date range
-        url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
-        all_data = []
-        
-        while start_ms < end_ms:
-            response = requests.get(url)
-            response.raise_for_status()
-            data = response.json()
-            if not data:
-                break
-            all_data.extend(data)
-            start_ms = int(data[-1][0]) + 3600000  # Move to next hour
-            url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
-        
-        data = all_data
-    else:
-        # Original behavior: fetch latest N candles
-        url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={INTERVAL}&limit={limit}"
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
+    # List of endpoints to try if one is rate-limited
+    endpoints = [
+        "https://api.binance.com",
+        "https://api1.binance.com",
+        "https://api2.binance.com",
+        "https://api3.binance.com"
+    ]
     
-    try:
-        df = pd.DataFrame(data, columns=['time','Open','High','Low','Close','Volume', 'ct','q','n','tb','tq','i'])
-        df['Close'] = df['Close'].astype(float)
-        df['Volume'] = df['Volume'].astype(float)
-        df['Open time'] = pd.to_datetime(df['time'], unit='ms')
-        return df[['Open time', 'Close', 'Volume']]
-    except Exception as e:
-        print(f"Error fetching {symbol}: {e}")
-        return pd.DataFrame()
+    last_error = ""
+    for base_url in endpoints:
+        try:
+            if months_back_start and months_back_end:
+                # ... [Date range logic remains same, just uses base_url]
+                now = datetime.utcnow()
+                start_date = now - timedelta(days=months_back_start * 30)
+                end_date = now - timedelta(days=months_back_end * 30)
+                start_ms = int(start_date.timestamp() * 1000)
+                end_ms = int(end_date.timestamp() * 1000)
+                
+                url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
+                all_data = []
+                while start_ms < end_ms:
+                    response = requests.get(url, timeout=10)
+                    response.raise_for_status()
+                    data = response.json()
+                    if not data: break
+                    all_data.extend(data)
+                    start_ms = int(data[-1][0]) + 3600000
+                    url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&startTime={start_ms}&endTime={end_ms}&limit=1000"
+                data = all_data
+            else:
+                url = f"{base_url}/api/v3/klines?symbol={symbol}&interval={INTERVAL}&limit={limit}"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+            
+            # If we got here, it worked!
+            df = pd.DataFrame(data, columns=['time','Open','High','Low','Close','Volume', 'ct','q','n','tb','tq','i'])
+            df['Close'] = df['Close'].astype(float)
+            df['Volume'] = df['Volume'].astype(float)
+            df['Open time'] = pd.to_datetime(df['time'], unit='ms')
+            return df[['Open time', 'Close', 'Volume']]
+            
+        except Exception as e:
+            last_error = str(e)
+            continue # Try next endpoint
+            
+    print(f"[!] All Binance endpoints failed for {symbol}. Last error: {last_error}")
+    return pd.DataFrame()
 
 # --- MARKET CONTEXT ENGINE ---
 def get_market_pulse(limit=100):
