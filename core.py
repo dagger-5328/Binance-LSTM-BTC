@@ -172,18 +172,32 @@ class ModelEngine:
         self._load()
 
     def _load(self):
+        # Use absolute paths to prevent CWD issues
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.model_path = os.path.join(base_dir, 'models', 'model.keras')
+        self.scaler_path = os.path.join(base_dir, 'models', 'scaler.pkl')
+        self.metrics_path = os.path.join(base_dir, 'models', 'metrics.json')
+
         if os.path.exists(self.model_path) and os.path.exists(self.scaler_path):
-            # Pass custom objects to load_model
-            self.model = load_model(self.model_path, custom_objects={'TemporalAttention': TemporalAttention})
-            self.scaler = joblib.load(self.scaler_path)
-            # Load optimized threshold from metrics.json
-            if os.path.exists(self.metrics_path):
-                with open(self.metrics_path, 'r') as mf:
-                    metrics_data = json.load(mf)
-                    self.threshold = metrics_data.get('threshold', 0.5)
-            else:
-                self.threshold = 0.5  # Default fallback
-            self.ready = True
+            try:
+                # Keras 3 native format doesn't always need custom_objects if registered, 
+                # but we'll keep it for safety.
+                self.model = keras.models.load_model(self.model_path, custom_objects={'TemporalAttention': TemporalAttention})
+                self.scaler = joblib.load(self.scaler_path)
+                
+                if os.path.exists(self.metrics_path):
+                    with open(self.metrics_path, 'r') as mf:
+                        metrics_data = json.load(mf)
+                        self.threshold = metrics_data.get('threshold', 0.5)
+                
+                self.ready = True
+                print(f"[+] Model engine initialized from {self.model_path}")
+            except Exception as e:
+                print(f"[!] Error loading model artifacts: {e}")
+                self.ready = False
+        else:
+            print(f"[!] Model artifacts missing at: {self.model_path} or {self.scaler_path}")
+            self.ready = False
 
     def predict(self, symbol):
         if not self.ready: return {"error": "Model not trained."}

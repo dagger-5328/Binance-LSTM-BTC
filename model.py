@@ -6,12 +6,13 @@ Multi-task output for 3d and 7d horizons.
 """
 
 import tensorflow as tf
+import keras
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import LSTM, Dense, Dropout, LayerNormalization, Input
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam
 
-
+@keras.saving.register_keras_serializable(package="Custom")
 class TemporalAttention(tf.keras.layers.Layer):
     """
     Custom attention layer that learns to weight timesteps in LSTM sequences.

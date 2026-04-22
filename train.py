@@ -230,7 +230,7 @@ def main():
 
     # ---------------- SAVE ----------------
     os.makedirs("models", exist_ok=True)
-    model.save("models/model.h5")
+    model.save("models/model.keras")
     joblib.dump(scaler, "models/scaler.pkl")
     print(f"\n[+] Production Model (V7) saved successfully.")
 
