@@ -1,4 +1,4 @@
-# 💹 Crypto Pulse: Professional Multi-Horizon Analytics Dashboard
+# 💹 Crypto Pulse : Temporal Crypto Market Signal Modeling
 
 A high-performance quantitative framework for cryptocurrency trend forecasting. This project utilizes a Multi-Task LSTM architecture with Temporal Attention to predict market direction across 3-day and 7-day horizons.
 
